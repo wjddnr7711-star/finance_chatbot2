@@ -134,7 +134,7 @@ def render_result_page():
 
 def render_learning_page():
     level, week, day = st.session_state.level, st.session_state.current_week, st.session_state.current_day
-    content = load_markdown_content(f"curriculum/{level}/w{week}d{day}_content.md")
+    content = load_markdown_content(f"/{level}/w{week}d{day}_content.md")
 
     st.title(f"[{level.capitalize()}] {week}주차 {day}일차 학습")
     with st.container(height=300):
@@ -177,7 +177,7 @@ def render_learning_page():
 
 def render_daily_quiz_page():
     level, week, day = st.session_state.level, st.session_state.current_week, st.session_state.current_day
-    quiz_data = load_json_data(f"curriculum/{level}/w{week}d{day}_quiz.json")
+    quiz_data = load_json_data(f"{level}/w{week}d{day}_quiz.json")
 
     st.title(f"[{level.capitalize()}] {week}주차 {day}일차 복습 퀴즈 📝")
     if not quiz_data: st.error("퀴즈 데이터를 찾을 수 없습니다."); return
