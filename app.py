@@ -4,6 +4,8 @@ import os
 import openai
 import pandas as pd
 import altair as alt
+import datetime
+
 
 # --- 1. 초기 설정 및 함수 정의 ---
 st.set_page_config(page_title="AI 금융 교육 챗봇", page_icon="🤖", layout="centered")
@@ -64,11 +66,24 @@ def render_home_page():
     st.title("AI 금융 교육 챗봇 🤖")
     st.markdown("---")
     st.subheader("금융 지식, AI와 함께 쉽고 재미있게!")
-    st.write("먼저 간단한 레벨 테스트를 통해 당신의 금융 지식 수준을 확인하고, 맞춤형 학습 계획을 설계해 보세요.")
-    if st.button("레벨 테스트 시작하기", type="primary", use_container_width=True):
-        st.session_state.lt_current_q, st.session_state.lt_score, st.session_state.lt_user_answers = 0, 0, []
-        st.session_state.current_page = 'level_test'
-        st.rerun()
+    st.write("먼저 간단한 설문과 레벨 테스트를 통해 맞춤형 학습을 설계해 보세요.")
+    
+    # [추가된 부분] 사전 설문조사 폼
+    with st.form("survey_form"):
+        st.markdown("#### 📋 참여자 정보 입력 (연구 통계용)")
+        gender = st.radio("성별", ["남성", "여성"], horizontal=True)
+        grade = st.selectbox("학년 및 상태", ["1학년", "2학년", "3학년", "4학년", "졸업생", "기타"])
+        
+        submitted = st.form_submit_button("레벨 테스트 시작하기", type="primary", use_container_width=True)
+        if submitted:
+            # 설문 결과 임시 저장
+            st.session_state.user_gender = gender
+            st.session_state.user_grade = grade
+            
+            # 레벨 테스트 초기화 및 이동
+            st.session_state.lt_current_q, st.session_state.lt_score, st.session_state.lt_user_answers = 0, 0, []
+            st.session_state.current_page = 'level_test'
+            st.rerun()
 
 def render_level_test_page():
     level_test_data = load_json_data('level_test_questions.json')
@@ -113,7 +128,30 @@ def render_result_page():
     
     st.session_state.level = folder
     if display_level == "고급자": st.balloons()
-    
+
+    # [추가된 부분] 결과가 나오자마자 백그라운드에서 구글 시트로 데이터 전송 (1회만 실행)
+    if 'db_saved' not in st.session_state:
+        try:
+            from streamlit_gsheets import GSheetsConnection
+            conn = st.connection("gsheets", type=GSheetsConnection)
+            
+            now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            new_row = pd.DataFrame([{
+                "일시": now,
+                "성별": st.session_state.get("user_gender", "미상"),
+                "학년": st.session_state.get("user_grade", "미상"),
+                "점수": score,
+                "배치수준": display_level
+            }])
+            
+            existing_data = conn.read(worksheet="Sheet1", ttl=5).dropna(how="all")
+            updated_data = pd.concat([existing_data, new_row], ignore_index=True)
+            conn.update(worksheet="Sheet1", data=updated_data)
+        except Exception as e:
+            # 아직 구글 시트 세팅을 안 했어도 에러가 나면서 앱이 멈추지 않도록 패스!
+            pass 
+        st.session_state.db_saved = True
+        
     st.subheader(f"당신의 금융 레벨은 **'{display_level}'** 입니다.")
     st.progress(percentage / 100, text=f"전체 정답률: {percentage:.1f}% ({score}/{total_q})")
     st.markdown("---")
@@ -152,7 +190,7 @@ def render_result_page():
 
 def render_learning_page():
     level, week, day = st.session_state.level, st.session_state.current_week, st.session_state.current_day
-    content = load_markdown_content(f"/{level}/w{week}d{day}_content.md")
+    content = load_markdown_content(f"{level}/w{week}d{day}_content.md")
 
     st.title(f"[{level.capitalize()}] {week}주차 {day}일차 학습")
     with st.container(height=300):
