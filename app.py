@@ -29,8 +29,19 @@ def load_json_data(file_path):
 
 @st.cache_data
 def load_markdown_content(file_path):
-    if not os.path.exists(file_path): return "학습 콘텐츠를 준비 중입니다."
-    with open(file_path, 'r', encoding='utf-8') as f:
+    # 슬래시가 앞에 붙어 있거나 폴더 위치가 달라도 알아서 찾아내도록 수정!
+    clean_path = file_path.lstrip('/') # 맨 앞 슬래시 제거
+    
+    target_path = clean_path
+    if not os.path.exists(target_path):
+        if os.path.exists(os.path.join("curriculum", clean_path)):
+            target_path = os.path.join("curriculum", clean_path)
+        elif os.path.exists(os.path.join("data", clean_path)):
+            target_path = os.path.join("data", clean_path)
+        else:
+            return "학습 콘텐츠를 준비 중입니다."
+            
+    with open(target_path, 'r', encoding='utf-8') as f:
         return f.read()
 
 def initialize_session_state():
