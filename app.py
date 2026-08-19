@@ -139,12 +139,12 @@ def render_result_page():
                 "배치수준": display_level
             }])
             
-            existing_data = conn.read(worksheet="데이터수집", ttl=5).dropna(how="all")
+            # 탭 이름을 실제 시트 하단의 '시트1'로 수정 완료!
+            existing_data = conn.read(worksheet="시트1", ttl=5).dropna(how="all")
             updated_data = pd.concat([existing_data, new_row], ignore_index=True)
-            conn.update(worksheet="데이터수집", data=updated_data)
+            conn.update(worksheet="시트1", data=updated_data)
             
         except Exception as e:
-            # 🚨 CCTV 작동: 에러의 정확한 이름과 세부 기록을 싹 다 출력함!
             st.error(f"⚠️ 구글 시트 저장 실패! 에러 종류: {type(e).__name__}") 
             st.code(traceback.format_exc())
             
