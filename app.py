@@ -53,7 +53,7 @@ def render_home_page():
         st.rerun()
 
 def render_level_test_page():
-    level_test_data = load_json_data('data/level_test_questions.json')
+    level_test_data = load_json_data('level_test_questions.json')
     if not level_test_data: st.error("레벨 테스트 문제 파일을 찾을 수 없습니다."); return
     
     total_q, q_index = len(level_test_data), st.session_state.lt_current_q
@@ -84,7 +84,7 @@ def render_level_test_page():
             else: st.warning("답을 선택해주세요!")
 
 def render_result_page():
-    score, total_q = st.session_state.lt_score, len(load_json_data('data/level_test_questions.json'))
+    score, total_q = st.session_state.lt_score, len(load_json_data('level_test_questions.json'))
     percentage = (score / total_q) * 100
     
     st.title("레벨 테스트 결과")
