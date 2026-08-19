@@ -5,6 +5,7 @@ import openai
 import pandas as pd
 import altair as alt
 import datetime
+import traceback
 
 
 # --- 1. 초기 설정 및 함수 정의 ---
@@ -18,7 +19,6 @@ except (FileNotFoundError, KeyError):
 
 @st.cache_data
 def load_json_data(file_path):
-    # 파일이 그냥 있거나 data 폴더 안에 있으면 알아서 찾도록 수정!
     target_path = file_path
     if not os.path.exists(target_path):
         if os.path.exists(os.path.join("data", file_path)):
@@ -31,8 +31,7 @@ def load_json_data(file_path):
 
 @st.cache_data
 def load_markdown_content(file_path):
-    # 슬래시가 앞에 붙어 있거나 폴더 위치가 달라도 알아서 찾아내도록 수정!
-    clean_path = file_path.lstrip('/') # 맨 앞 슬래시 제거
+    clean_path = file_path.lstrip('/')
     
     target_path = clean_path
     if not os.path.exists(target_path):
@@ -68,7 +67,6 @@ def render_home_page():
     st.subheader("금융 지식, AI와 함께 쉽고 재미있게!")
     st.write("먼저 간단한 설문과 레벨 테스트를 통해 맞춤형 학습을 설계해 보세요.")
     
-    # [추가된 부분] 사전 설문조사 폼
     with st.form("survey_form"):
         st.markdown("#### 📋 참여자 정보 입력 (연구 통계용)")
         gender = st.radio("성별", ["남성", "여성"], horizontal=True)
@@ -76,11 +74,9 @@ def render_home_page():
         
         submitted = st.form_submit_button("레벨 테스트 시작하기", type="primary", use_container_width=True)
         if submitted:
-            # 설문 결과 임시 저장
             st.session_state.user_gender = gender
             st.session_state.user_grade = grade
             
-            # 레벨 테스트 초기화 및 이동
             st.session_state.lt_current_q, st.session_state.lt_score, st.session_state.lt_user_answers = 0, 0, []
             st.session_state.current_page = 'level_test'
             st.rerun()
@@ -102,7 +98,7 @@ def render_level_test_page():
             if user_answer:
                 is_correct = (user_answer == question_data["answer"])
                 if is_correct: st.session_state.lt_score += 1
-                # [수정됨] 카테고리 데이터 함께 저장
+                
                 st.session_state.lt_user_answers.append({
                     "q": question_data["question"], 
                     "sel": user_answer, 
@@ -129,7 +125,6 @@ def render_result_page():
     st.session_state.level = folder
     if display_level == "고급자": st.balloons()
 
-    # [수정된 부분] 결과가 나오자마자 백그라운드에서 구글 시트로 데이터 전송
     if 'db_saved' not in st.session_state:
         try:
             from streamlit_gsheets import GSheetsConnection
@@ -144,14 +139,14 @@ def render_result_page():
                 "배치수준": display_level
             }])
             
-            # 탭 이름을 '데이터수집'으로 수정 완료!
             existing_data = conn.read(worksheet="데이터수집", ttl=5).dropna(how="all")
             updated_data = pd.concat([existing_data, new_row], ignore_index=True)
             conn.update(worksheet="데이터수집", data=updated_data)
             
         except Exception as e:
-            # 에러 발생 시 화면에 출력!
-            st.error(f"⚠️ 구글 시트 저장 실패! 원인: {e}") 
+            # 🚨 CCTV 작동: 에러의 정확한 이름과 세부 기록을 싹 다 출력함!
+            st.error(f"⚠️ 구글 시트 저장 실패! 에러 종류: {type(e).__name__}") 
+            st.code(traceback.format_exc())
             
         st.session_state.db_saved = True
         
@@ -159,7 +154,6 @@ def render_result_page():
     st.progress(percentage / 100, text=f"전체 정답률: {percentage:.1f}% ({score}/{total_q})")
     st.markdown("---")
     
-    # [1번 기능 추가] 영역별 초개인화 대시보드 시각화
     st.subheader("📊 영역별 지식 성취도 분석")
     cat_data = {}
     for ans in st.session_state.lt_user_answers:
@@ -201,7 +195,6 @@ def render_learning_page():
     st.markdown("---")
     st.subheader("무엇이든 물어보세요! AI 튜터 💬")
 
-    # [2번 기능 추가] 학습자의 오답 기록을 모아 프롬프트에 주입 (Context 확장)
     lt_incorrects = [ans['q'] for ans in st.session_state.lt_user_answers if not ans['correct']]
     dq_incorrects = [ans['question'] for ans in st.session_state.all_incorrect_answers]
     all_weaknesses = list(set(lt_incorrects + dq_incorrects))
