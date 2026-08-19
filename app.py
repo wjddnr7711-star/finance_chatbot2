@@ -129,7 +129,7 @@ def render_result_page():
     st.session_state.level = folder
     if display_level == "고급자": st.balloons()
 
-    # [추가된 부분] 결과가 나오자마자 백그라운드에서 구글 시트로 데이터 전송 (1회만 실행)
+    # [수정된 부분] 결과가 나오자마자 백그라운드에서 구글 시트로 데이터 전송
     if 'db_saved' not in st.session_state:
         try:
             from streamlit_gsheets import GSheetsConnection
@@ -144,12 +144,15 @@ def render_result_page():
                 "배치수준": display_level
             }])
             
-            existing_data = conn.read(worksheet="Sheet1", ttl=5).dropna(how="all")
+            # 탭 이름을 '데이터수집'으로 수정 완료!
+            existing_data = conn.read(worksheet="데이터수집", ttl=5).dropna(how="all")
             updated_data = pd.concat([existing_data, new_row], ignore_index=True)
-            conn.update(worksheet="Sheet1", data=updated_data)
+            conn.update(worksheet="데이터수집", data=updated_data)
+            
         except Exception as e:
-            # 아직 구글 시트 세팅을 안 했어도 에러가 나면서 앱이 멈추지 않도록 패스!
-            pass 
+            # 에러 발생 시 화면에 출력!
+            st.error(f"⚠️ 구글 시트 저장 실패! 원인: {e}") 
+            
         st.session_state.db_saved = True
         
     st.subheader(f"당신의 금융 레벨은 **'{display_level}'** 입니다.")
