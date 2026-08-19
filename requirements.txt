@@ -4,3 +4,4 @@ pandas
 altair
 gspread
 google-auth
+st-gsheets-connection
