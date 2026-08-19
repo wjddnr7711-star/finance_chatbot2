@@ -16,8 +16,15 @@ except (FileNotFoundError, KeyError):
 
 @st.cache_data
 def load_json_data(file_path):
-    if not os.path.exists(file_path): return None
-    with open(file_path, 'r', encoding='utf-8') as f:
+    # 파일이 그냥 있거나 data 폴더 안에 있으면 알아서 찾도록 수정!
+    target_path = file_path
+    if not os.path.exists(target_path):
+        if os.path.exists(os.path.join("data", file_path)):
+            target_path = os.path.join("data", file_path)
+        else:
+            return None
+            
+    with open(target_path, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 @st.cache_data
