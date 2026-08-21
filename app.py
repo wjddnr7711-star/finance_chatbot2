@@ -2,7 +2,7 @@ import streamlit as st
 import json
 import os
 import openai
-import pandas as 
+import pandas as pd
 import altair as alt
 import datetime
 import traceback
