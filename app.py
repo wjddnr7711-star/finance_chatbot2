@@ -2,7 +2,7 @@ import streamlit as st
 import json
 import os
 import openai
-import pandas as pd
+import pandas as 
 import altair as alt
 import datetime
 import traceback
@@ -1028,23 +1028,16 @@ def render_learning_page():
             st.rerun()
 
 
-# =========================================================
+
+# =====================================================
 # 10. 일일 복습 퀴즈
-# =========================================================
+# =====================================================
 
 def render_daily_quiz_page():
 
-    level = (
-        st.session_state.level
-    )
-
-    week = (
-        st.session_state.current_week
-    )
-
-    day = (
-        st.session_state.current_day
-    )
+    level = st.session_state.level
+    week = st.session_state.current_week
+    day = st.session_state.current_day
 
     quiz_data = load_json_data(
         f"{level}/w{week}d{day}_quiz.json"
@@ -1056,20 +1049,12 @@ def render_daily_quiz_page():
     )
 
     if not quiz_data:
-
-        st.error(
-            "퀴즈 데이터를 찾을 수 없습니다."
-        )
-
+        st.error("퀴즈 데이터를 찾을 수 없습니다.")
         return
 
-    total_q = len(
-        quiz_data
-    )
+    total_q = len(quiz_data)
 
-    q_index = (
-        st.session_state.dq_current_q
-    )
+    q_index = st.session_state.dq_current_q
 
     st.session_state.dq_total_q = total_q
 
@@ -1078,13 +1063,10 @@ def render_daily_quiz_page():
         text=f"퀴즈 진행률: {q_index}/{total_q}"
     )
 
-    q_data = quiz_data[
-        q_index
-    ]
+    q_data = quiz_data[q_index]
 
     st.subheader(
-        f"Q{q_index + 1}. "
-        f"{q_data['question']}"
+        f"Q{q_index + 1}. {q_data['question']}"
     )
 
     with st.form(
@@ -1112,28 +1094,49 @@ def render_daily_quiz_page():
 
                 return
 
+            # 정답 여부 확인
             is_correct = (
-                user_answer ==
-                q_data["answer"]
+                user_answer == q_data["answer"]
             )
 
+            # 정답이면 점수 증가
             if is_correct:
 
                 st.session_state.dq_score += 1
 
+            # -----------------------------------------
+            # 오답이면 오답노트에 저장
+            # -----------------------------------------
+
             else:
 
-                # 오답 누적
-                if q_data not in (
-                    st.session_state
-                    .all_incorrect_answers
-                ):
+                incorrect_data = {
+                    "week": week,
+                    "day": day,
+                    "question": q_data["question"],
+                    "options": q_data["options"],
+                    "answer": q_data["answer"],
+                    "user_answer": user_answer
+                }
+
+                # 같은 차시에서 같은 문제 중복 저장 방지
+                already_saved = any(
+                    item.get("week") == week
+                    and item.get("day") == day
+                    and item.get("question") == q_data["question"]
+                    for item in st.session_state.all_incorrect_answers
+                )
+
+                if not already_saved:
 
                     st.session_state.all_incorrect_answers.append(
-                        q_data
+                        incorrect_data
                     )
 
+            # -----------------------------------------
             # 다음 문제
+            # -----------------------------------------
+
             if q_index < total_q - 1:
 
                 st.session_state.dq_current_q += 1
@@ -1153,13 +1156,8 @@ def render_daily_quiz_page():
 
 def render_quiz_result_page():
 
-    week = (
-        st.session_state.current_week
-    )
-
-    day = (
-        st.session_state.current_day
-    )
+    week = st.session_state.current_week
+    day = st.session_state.current_day
 
     st.title(
         f"{week}주차 {day}일차 학습 완료! 🎉"
@@ -1168,6 +1166,10 @@ def render_quiz_result_page():
     st.success(
         "오늘의 학습과 퀴즈를 모두 마쳤습니다."
     )
+
+    # ---------------------------------------------
+    # 퀴즈 점수
+    # ---------------------------------------------
 
     st.metric(
         label="퀴즈 결과",
@@ -1179,9 +1181,100 @@ def render_quiz_result_page():
 
     st.markdown("---")
 
-    # -----------------------------------------------------
+    # =====================================================
+    # 오늘의 오답 노트
+    # =====================================================
+
+    st.subheader("📝 오늘의 오답 노트")
+
+    # 현재 주차/차시에서 틀린 문제만 가져오기
+    today_incorrects = [
+
+        item
+
+        for item in st.session_state.all_incorrect_answers
+
+        if item.get("week") == week
+        and item.get("day") == day
+
+    ]
+
+    # ---------------------------------------------
+    # 오답이 없는 경우
+    # ---------------------------------------------
+
+    if not today_incorrects:
+
+        st.success(
+            "오늘은 모든 문제를 맞혔습니다! 🎉"
+        )
+
+    # ---------------------------------------------
+    # 오답이 있는 경우
+    # ---------------------------------------------
+
+    else:
+
+        st.warning(
+            f"오늘 틀린 문제는 "
+            f"총 **{len(today_incorrects)}개**입니다."
+        )
+
+        for i, q_data in enumerate(
+            today_incorrects
+        ):
+
+            with st.expander(
+                f"❌ 오답 {i + 1}. "
+                f"{q_data['question']}"
+            ):
+
+                # 내가 선택한 답
+                st.markdown(
+                    f"**내가 선택한 답:** "
+                    f"❌ {q_data['user_answer']}"
+                )
+
+                # 정답
+                st.markdown(
+                    f"**정답:** "
+                    f"✅ {q_data['answer']}"
+                )
+
+                st.markdown("---")
+
+                # 선택지 확인
+                st.markdown("**선택지**")
+
+                for option in q_data["options"]:
+
+                    if option == q_data["answer"]:
+
+                        st.success(
+                            f"✅ {option} ← 정답"
+                        )
+
+                    elif option == q_data["user_answer"]:
+
+                        st.error(
+                            f"❌ {option} ← 내가 선택한 답"
+                        )
+
+                    else:
+
+                        st.write(
+                            f"○ {option}"
+                        )
+
+    st.markdown("---")
+
+    # =====================================================
+    # 다음 차시 이동
+    # =====================================================
+
+    # ---------------------------------------------
     # 마지막 차시 여부
-    # -----------------------------------------------------
+    # ---------------------------------------------
 
     is_last_day = (
         week == 4 and
@@ -1210,17 +1303,17 @@ def render_quiz_result_page():
             use_container_width=True
         ):
 
-            # ---------------------------------------------
-            # 같은 주차의 다음 날
-            # ---------------------------------------------
+            # -----------------------------------------
+            # 같은 주차의 다음 차시
+            # -----------------------------------------
 
             if st.session_state.current_day < 5:
 
                 st.session_state.current_day += 1
 
-            # ---------------------------------------------
+            # -----------------------------------------
             # 다음 주차
-            # ---------------------------------------------
+            # -----------------------------------------
 
             elif st.session_state.current_week < 4:
 
@@ -1228,9 +1321,9 @@ def render_quiz_result_page():
 
                 st.session_state.current_day = 1
 
-            # ---------------------------------------------
+            # -----------------------------------------
             # 다음 학습으로 이동
-            # ---------------------------------------------
+            # -----------------------------------------
 
             st.session_state.chat_messages = []
 
