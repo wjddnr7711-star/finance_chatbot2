@@ -9,7 +9,7 @@ import traceback
 
 
 # =========================================================
-# 1. 초기 설정 및 함수 정의
+# 1. 초기 설정 및 Custom CSS 정의 (현대적 UI 적용)
 # =========================================================
 
 st.set_page_config(
@@ -17,6 +17,60 @@ st.set_page_config(
     page_icon="🤖",
     layout="centered"
 )
+
+
+def apply_custom_css():
+    st.markdown("""
+        <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        
+        html, body, [class*="css"] {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+        }
+
+        .main .block-container {
+            padding-top: 2rem;
+            padding-bottom: 3rem;
+            max-width: 720px;
+        }
+
+        /* 모던 카드 디자인 */
+        .custom-card {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+
+        /* 뱃지 스타일 */
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background-color: #e0e7ff;
+            color: #4338ca;
+            margin-bottom: 12px;
+        }
+
+        /* 버튼 및 입력창 다듬기 */
+        .stButton > button {
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .stTextInput > div > div > input {
+            border-radius: 10px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+
+apply_custom_css()
 
 
 # ---------------------------------------------------------
@@ -230,13 +284,13 @@ def convert_level_to_folder(display_level):
 
 def render_home_page():
 
-    st.title("AI 금융 교육 챗봇 🤖")
-
-    st.markdown("---")
-
-    st.subheader(
-        "금융 지식, AI와 함께 쉽고 재미있게!"
-    )
+    st.markdown('''
+        <div class="custom-card">
+            <span class="badge">AI-Powered Platform</span>
+            <h1 style="margin: 0 0 10px 0; font-size: 1.8rem; color: #1e293b;">AI 금융 교육 챗봇 🤖</h1>
+            <p style="margin: 0; color: #64748b; font-size: 1.05rem;">금융 지식, AI와 함께 쉽고 재미있게!</p>
+        </div>
+    ''', unsafe_allow_html=True)
 
     st.write(
         "학습자 ID를 입력하면 기존 학습 기록을 확인합니다."
@@ -324,7 +378,11 @@ def render_home_page():
 
 def render_survey_page():
 
-    st.title("📋 참여자 정보 입력")
+    st.markdown('''
+        <div class="custom-card">
+            <h2 style="margin: 0; font-size: 1.5rem; color: #1e293b;">📋 참여자 정보 입력</h2>
+        </div>
+    ''', unsafe_allow_html=True)
 
     with st.form("survey_form"):
 
@@ -407,10 +465,13 @@ def render_level_test_page():
         q_index
     ]
 
-    st.subheader(
-        f"Q{q_index + 1}. "
-        f"{q_data['question']}"
-    )
+    st.markdown(f"""
+        <div class="custom-card">
+            <div style="font-size: 1.1rem; font-weight: 600; color: #1e293b;">
+                Q{q_index + 1}. {q_data['question']}
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
     with st.form(
         key=f"lt_{q_index}"
@@ -419,12 +480,14 @@ def render_level_test_page():
         user_answer = st.radio(
             "답:",
             q_data["options"],
-            index=None
+            index=None,
+            label_visibility="collapsed"
         )
 
         submitted = st.form_submit_button(
             "제출",
-            use_container_width=True
+            use_container_width=True,
+            type="primary"
         )
 
         if submitted:
@@ -597,10 +660,13 @@ def render_result_page():
         "🎉 테스트 결과"
     )
 
-    st.write(
-        f"당신의 레벨은 "
-        f"**'{display_level}'** 입니다."
-    )
+    st.markdown(f"""
+        <div class="custom-card" style="text-align: center;">
+            <div style="font-size: 1.2rem; color: #1e293b;">당신의 레벨은</div>
+            <div style="font-size: 2rem; font-weight: 700; color: #4338ca; margin: 10px 0;">'{display_level}'</div>
+            <div style="color: #64748b;">전체 정답률: {percentage * 100:.1f}% ({score}/{total_q})</div>
+        </div>
+    """, unsafe_allow_html=True)
 
     st.progress(
         percentage,
@@ -657,7 +723,8 @@ def render_result_page():
         chart = alt.Chart(
             df
         ).mark_bar(
-            color="#4C78A8"
+            color="#4338ca",
+            cornerRadiusEnd=6
         ).encode(
 
             x=alt.X(
@@ -730,7 +797,7 @@ def render_result_page():
 
 
 # =========================================================
-# 9. 학습 페이지 + AI 챗봇   ← 여기가 수정된 함수
+# 9. 학습 페이지 + AI 챗봇
 # =========================================================
 
 def render_learning_page():
@@ -751,10 +818,12 @@ def render_learning_page():
         f"{level}/w{week}d{day}_content.md"
     )
 
-    st.title(
-        f"[{level.capitalize()}] "
-        f"{week}주차 {day}일차 학습"
-    )
+    st.markdown(f"""
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span class="badge" style="margin: 0;">{level.capitalize()} LEVEL</span>
+            <span style="font-weight: 600; color: #64748b;">{week}주차 {day}일차 학습</span>
+        </div>
+    """, unsafe_allow_html=True)
 
     with st.container(height=300):
 
@@ -810,9 +879,6 @@ def render_learning_page():
             "맞춰 눈높이를 낮춰주세요.)"
         )
 
-    # ---------------------------------------------------
-    # ★ 추가된 부분 1: 레벨을 사람이 읽기 좋은 설명으로 변환
-    # ---------------------------------------------------
     level_display = {
         "beginner": "초급자 (금융 지식이 거의 없는 입문 단계)",
         "intermediate": "중급자 (기본 개념은 알고 투자를 시작한 단계)",
@@ -851,10 +917,6 @@ def render_learning_page():
                 "AI 튜터가 답변을 생각하고 있어요..."
             ):
 
-                # -----------------------------------------
-                # ★ 추가된 부분 2: system_prompt에 레벨 정보 +
-                #    레벨별 설명 난이도 지시 삽입
-                # -----------------------------------------
                 system_prompt = f"""
 당신은 대학생 금융 교육 전문가입니다.
 
@@ -999,9 +1061,13 @@ def render_daily_quiz_page():
 
     q_data = quiz_data[q_index]
 
-    st.subheader(
-        f"Q{q_index + 1}. {q_data['question']}"
-    )
+    st.markdown(f"""
+        <div class="custom-card">
+            <div style="font-size: 1.1rem; font-weight: 600; color: #1e293b;">
+                Q{q_index + 1}. {q_data['question']}
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
     with st.form(
         key=f"dq_form_{q_index}"
@@ -1010,12 +1076,14 @@ def render_daily_quiz_page():
         user_answer = st.radio(
             "답:",
             q_data["options"],
-            index=None
+            index=None,
+            label_visibility="collapsed"
         )
 
         submitted = st.form_submit_button(
             "제출",
-            use_container_width=True
+            use_container_width=True,
+            type="primary"
         )
 
         if submitted:
